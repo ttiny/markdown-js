@@ -41,6 +41,8 @@
 		codeInlineClass:string = "inline",
 		codeInlineTag:string = "code",
 		codeBlockCallback:function = "null",
+		codeCallback:function = "null",
+		noCodeCallback:function = "null",
 		needParagraph:bool = "false"
 	}
 	@param Class attribute for table tag.
@@ -57,7 +59,12 @@
 	@param Callback that can be used to style the the code in code blocks.
 	If used this callback is responsible for escaping HTML entities inside the block.
 	First argument is the text to be styles, second argument is the language of the text (if specified),
-	third argument is the default language specified for parser (if any).
+	third argument is the default language specified for parser (if any). Should return the new content
+	of the code block.
+	@param Additional callback for code, can be used for further escaping. Will be called for both
+	code blocks and inline code. Accepts text and returns new text.
+	@param Callback to be used as extra parsing step after all markdown has been parsed. Will be executed
+	only for parts of the text that are not code. First argument is the text. Should return text.
 	@param If needs to wrap the top level element in paragraph.
 	*/
 
@@ -223,10 +230,12 @@
 			return m1 + '<'+tag+'>' + parseInline( m3, ret ) + '</'+tag+'>';
 		}
 
-		function parseInline_cb4 ( m, m1, m2 ) {
+		function parseInline_cb4 ( m, dummyprefix, code ) {
 			var tag = ret.codeInlineTag;
 			var cls = ret.codeInlineClass ? ' class="'+ret.codeInlineClass+'"' : '';
-			return m1 + '<'+tag+cls+'>' + escapeHtmlAttr( m2 ) + '</'+tag+'>';
+			code = escapeHtmlAttr( code );
+			code = ret.codeCallback ? ret.codeCallback( code ) : code;
+			return dummyprefix + '<'+tag+cls+'>' + code + '</'+tag+'>';
 		}
 
 		text = text.replace( _reInlineCode1, parseInline_cb4 );
@@ -241,6 +250,9 @@
 		text = text.replace( _reEm2, parseInline_cb3 );
 		text = text.replace( _reStrike1, parseInline_cb3 );
 		text = text.replace( _reStrike2, parseInline_cb3 );
+		if ( ret.noCodeCallback ) {
+			text = ret.noCodeCallback( text );
+		}
 
 		return parseBrBs( text );
 	}
@@ -398,9 +410,15 @@
 		
 		str += ( ret.codeBlockWrapPre ? '<pre>' : '' ) + '<code'+cls+'>';
 		
-		str += ret.codeBlockCallback ?
+		code = ret.codeBlockCallback ?
 						ret.codeBlockCallback( code, lang, ret.codeDefaultLang  ) :
 						escapeHtmlBasic( code );
+
+		if ( ret.codeCallback ) {
+			code = ret.codeCallback( code );
+		}
+
+		str += code;
 		
 		str += '</code>' + ( ret.codeBlockWrapPre ? '</pre>' : '' );
 
