@@ -52,10 +52,12 @@
 	@param Default language for code blocks.
 	@param If to wrap code blocks with pre tag.
 	@param Adds a class name to the code blocks to be able to identify the from inline code.
-	@param Adds a class name to the inline code elments to be able to identify the from code block.
+	@param Adds a class name to the inline code elements to be able to identify the from code block.
 	@param Chooses a different tag for 'inline code'.
 	@param Callback that can be used to style the the code in code blocks.
-	If used this callback is reponsible for escaping HTML entities inside the block.
+	If used this callback is responsible for escaping HTML entities inside the block.
+	First argument is the text to be styles, second argument is the language of the text (if specified),
+	third argument is the default language specified for parser (if any).
 	@param If needs to wrap the top level element in paragraph.
 	*/
 
@@ -382,6 +384,29 @@
 		return getReferences( escapeMarkdown( text ), ret );
 	}
 
+	function codeBlock ( code, lang, ret ) {
+
+		var str = '';
+
+		var cls = lang || ret.codeDefaultLang;
+		if ( ret.codeBlockClass ) {
+			cls = ( cls ? ret.codeLangClassPrefix + cls + ' ' : '' ) + ret.codeBlockClass;
+		}
+		if ( cls ) {
+			cls = ' class="'+cls+'"';
+		}
+		
+		str += ( ret.codeBlockWrapPre ? '<pre>' : '' ) + '<code'+cls+'>';
+		
+		str += ret.codeBlockCallback ?
+						ret.codeBlockCallback( code, lang, ret.codeDefaultLang  ) :
+						escapeHtmlBasic( code );
+		
+		str += '</code>' + ( ret.codeBlockWrapPre ? '</pre>' : '' );
+
+		return str;
+	}
+
 	var _reTrimCodeLeft1 = /^    /gm;
 	var _reTrimCodeLeft2 = /^\t/gm;
 	var _reCode1 = /^`{3,}([^\n]+)?\n(?:([\s\S]+?)\n)?`{3,}$/gm;
@@ -399,7 +424,7 @@
 			if ( m === null ) {
 				m = _reCode4.exec( text );
 				if ( m === null) {
-					m = matchRecursive( text, '<code[^>]*>', '</code>', 'i' );
+					m = matchRecursive( text, '<code[^>]*>\n?', '</code>', 'i' );
 					if ( m === null ) {
 						return false;
 					}
@@ -408,7 +433,8 @@
 						parseMarkdown( markdownWithoutCode( text.substr( 0, m.start ), ret ), ret, true );
 						
 						//the match
-						ret.html += m.match;
+						//ret.html += m.match;
+						ret.html += codeBlock( text.slice( m.left.end, m.right.start ), null, ret );
 
 						//after the match
 						parseMarkdown( text.substr( m.end ), ret, true );
@@ -427,20 +453,8 @@
 
 		//before the match
 		parseMarkdown( markdownWithoutCode( text.substr( 0, m.index ), ret ), ret, true );
-		
-		var cls = m[1] || ret.codeDefaultLang;
-		if ( ret.codeBlockClass ) {
-			cls = ( cls ? ret.codeLangClassPrefix + cls + ' ' : '' ) + ret.codeBlockClass;
-		}
-		cls = ( alt == false && cls ) ? ' class="'+cls+'"' : '';
-		
-		ret.html += ( ret.codeBlockWrapPre ? '<pre>' : '' ) + '<code'+cls+'>';
-		
-		ret.html += ret.codeBlockCallback ?
-						ret.codeBlockCallback( m[ alt ? 1 : 2 ] ) :
-						escapeHtmlBasic( m[ alt ? 1 : 2 ], m[1], ret.codeDefaultLang );
-		
-		ret.html += '</code>' + ( ret.codeBlockWrapPre ? '</pre>' : '' );
+
+		ret.html += codeBlock( m[ alt ? 1 : 2 ], alt ? null : m[1], ret );
 		
 		//after the match
 		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
@@ -622,13 +636,7 @@
 		};
 
 		if ( options instanceof Object ) {
-			delete options.html;
-			delete options.references;
-			for ( var key in ret ) {
-				if ( options[key] !== undefined ) {
-					ret[key] = options[key];
-				}
-			}
+			ret.merge( options );
 		}
 
 		ret.html = '';
