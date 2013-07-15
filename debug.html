@@ -1,0 +1,25 @@
+<script type="text/javascript">function require() {}</script>
+<script type="text/javascript" src="node_modules/Prototype/node_modules/Unitest/Unitest.js"></script>
+<script type="text/javascript" src="node_modules/Prototype/Object.js"></script>
+<script type="text/javascript" src="node_modules/Prototype/Array.js"></script>
+<script type="text/javascript" src="node_modules/Prototype/String.js"></script>
+<script type="text/javascript" src="node_modules/Prototype/Function.js"></script>
+<script type="text/javascript" src="Markdown.js"></script>
+
+<script type="text/markdown" id="blockquotes-in" >
+text
+> quote
+> > sub qote
+> the first quote still goes on
+paragraph
+> quote
+> quote
+
+asd
+</script>
+
+<script type="text/javascript">
+	
+console.log( new Markdown().parse( document.getElementById( 'blockquotes-in' ).innerHTML ).html );
+
+</script>

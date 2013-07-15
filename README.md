@@ -8,15 +8,18 @@ For the supported syntax check Markdown.js or the documentation of jsdocgen.
 
 
 
-TODO
-----
+CHANGELOG
+---------
 
-* Ideally should be able to handle case like this \*\*strong \`intersects\*\* backtics\` and
-  not produce broken html with intersecting elements.
-* Right now the thing is not optimized. When it finds, for example, a code block, it should not look for the same pattern
-  in the part of the text before the match. This will save a lot of regex passes.
-* Nesting code in ul/ol
-* matchRecursive should cache regexes
+### 1.1
+- Some performance optimizations.
+- Added support for nesting of code inside lists and blockquotes.
+- Fixed broken HTML in case if intersecting markdown.
+- Changed the API a little bit.
+
+### 1.0
+First release.
+
 
 
 Authors

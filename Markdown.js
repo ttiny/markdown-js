@@ -1,7 +1,94 @@
 "use strict";
 
+require( 'Prototype' );
 
-(function ( exports ) {
+(function ( exports, global ) {
+
+	// based on the work by Steven Levithan
+	// http://stevenlevithan.com/assets/misc/recursion/matchRecursiveRegExp.js
+	var _matchRecursive_cache = {};
+	function _matchRecursive ( str, left, right, flags ) {
+		var flags = flags || '';
+		var global = flags.indexOf( 'g' ) > -1;
+		var retext =  '(' + left + ')|' + right;
+		if ( _matchRecursive_cache[retext] === undefined ) {
+			_matchRecursive_cache[retext] = {};
+		}
+		var re = _matchRecursive_cache[retext][flags];
+		if ( re ) {
+			re.lastIndex = 0;
+		}
+		else {
+			re = new RegExp( retext, 'g' + flags );
+			_matchRecursive_cache[retext][flags] = re;
+		}
+		var ret = [];
+		var t, start, m;
+		var startm;
+
+		ret:do {
+			t = 0;
+			while ( m = re.exec( str ) ) {
+				if ( m[1] ) {
+					if ( t++ == 0 ) {
+						start = re.lastIndex;
+						startm = m;
+					}
+				}
+				else if ( t ) {
+					if ( --t == 0 ) {
+						var match = {
+							match: str.slice( startm.index, re.lastIndex ),
+							start: startm.index,
+							end: re.lastIndex,
+						};
+						var left = {
+							match: startm[1],
+							start: startm.index,
+							end: startm.index + startm[1].length
+						};
+						var right = {
+							match: m[2],
+							start: m.index,
+							end: re.lastIndex
+						};
+						var inner = {
+							match: str.slice( left.end, right.start ),
+							start: left.end,
+							end: right.start
+						};
+						ret.push( {
+							match: match,
+							inner: inner,
+							left: left,
+							right: right
+						} );
+						if ( global === false ) {
+							break ret;
+						}
+					}
+				}
+			}
+		} while ( t && ( re.lastIndex = start ) );
+
+		return ret.length > 0 ? ( global ? ret : ret[0] ) : null;
+	}
+
+	//console.log( _matchRecursive( '<code>asd <code>asd</code> qwe</code>', '<code[^>]*>', '</code>' ) );
+	//console.log( _matchRecursive( '<code>asd <code>asd qwe</code>', '<code[^>]*>', '</code>' ) );
+	//console.log( _matchRecursive( '<code>asd <code>asd qwe', '<code[^>]*>', '</code>' ) );
+
+	
+
+
+
+
+	
+
+	
+
+
+	
 
 	/**
 	 * Somehow GFM compatible parser.
@@ -20,7 +107,7 @@
 	 * - \\b will delete the previous character.
 	 * - Additional escape characters: ~ < > / | and space and tab.
 	 *
-	 * @def function string Markdown.toHtml ( text:string, options:Markdown.Options|undefined )
+	 * @def constructor string Markdown ( options:Markdown.Options|undefined )
 	 * @param Markdown string.
 	 * @param Options for the generated HTML.
 	 * @return Html string.
@@ -68,578 +155,15 @@
 	@param If needs to wrap the top level element in paragraph.
 	*/
 
-
-
-	
-	// based on the work by Steven Levithan
-	// http://stevenlevithan.com/assets/misc/recursion/matchRecursiveRegExp.js
-	function matchRecursive ( str, left, right, flags ) {
-		var flags = flags || '';
-		var global = flags.indexOf( 'g' ) > -1;
-		var re = new RegExp( '(' + left + ')|' + right, 'g' + flags );
-		var ret = [];
-		var t, start, m;
-		var startm;
-
-		ret:do {
-			t = 0;
-			while ( m = re.exec( str ) ) {
-				if ( m[1] ) {
-					if ( t++ == 0 ) {
-						start = re.lastIndex;
-						startm = m;
-					}
-				}
-				else if ( t ) {
-					if ( --t == 0 ) {
-						ret.push( {
-							match: str.slice( startm.index, re.lastIndex ),
-							start: startm.index,
-							end: re.lastIndex,
-							left: {
-								match: startm[1],
-								start: startm.index,
-								end: startm.index + startm[1].length
-							},
-							right: {
-								match: m[2],
-								start: m.index,
-								end: re.lastIndex
-							}
-						} );
-						if ( global === false ) {
-							break ret;
-						}
-					}
-				}
-			}
-		} while ( t && ( re.lastIndex = start ) );
-
-		return ret.length > 0 ? ( global ? ret : ret[0] ) : null;
-	}
-
-	//console.log( matchRecursive( '<code>asd <code>asd</code> qwe</code>', '<code[^>]*>', '</code>' ) );
-	//console.log( matchRecursive( '<code>asd <code>asd qwe</code>', '<code[^>]*>', '</code>' ) );
-	//console.log( matchRecursive( '<code>asd <code>asd qwe', '<code[^>]*>', '</code>' ) );
-
-	var _reUnderline = /([^_]|^)(___(?!_))([\s\S]+?)___(?!_)/gm;
-	var _reStrong1 = /([^\*]|^)(\*\*(?!\*))([\s\S]+?)\*\*(?!\*)/gm;
-	var _reStrong2 = /([^_]|^)(__(?!_))([\s\S]+?)__(?!_)/gm;
-	var _reEm1 = /([^\*]|^)(\*(?!\*))([\s\S]+?)\*(?!\*)/gm;
-	var _reEm2 = /([^_a-zA-Z0-9]|^)(_(?!_))((?:[^_]|[a-zA-Z0-9_]+_+[a-zA-Z0-9_]+)+?)_(?![_a-zA-Z0-9])/gm;
-	var _reStrike1 = /([^\-]|^)(--(?!-))([\s\S]+?)--(?!-)/gm;
-	var _reStrike2 = /([^~]|^)(~~(?!~))([\s\S]+?)~~(?!-)/gm;
-	var _reInlineCode1 = /([^`]|^)(?:``)(?!`) ?([\s\S]+?) ?``(?!`)/gm;
-	var _reInlineCode2 = /([^`]|^)(?:`(?!`))([\s\S]+?)`(?!`)/gm;
-	var _emphasisTags = {
-		'*': 'em',
-		'_': 'em',
-		'**': 'strong',
-		'__': 'strong',
-		'~~': 'strike',
-		'--': 'strike',
-		'___': 'u',
-	};
-
-	var _reBr = /  \n/gm;
-	var _reBackSpace = /(.)\\b/gm;
-	function _aNameCb ( m, id ) {
-		return '<a name="'+escapeHtmlAttr(id.substr(1).toLowerCase())+'"></a>';
-	}
-
-	var _reRef2 = /\[(\^.+?)\]:\n?/gm;
-	function parseBrBs ( text ) {
-		var ret = text
-					.replace( _reBackSpace, '' )
-					.replace( _reBr, '<br/>' )
-					.replace( _reRef2, _aNameCb )
-					.trim();
-		return ret;
-	}
-
-	//inline
-	var _reLink1 = /(!)?\[(.*?)\]\((.*?)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\)/gm;
-	//reference
-	var _reLink2 = /(!)?\[(.*?)\]\[(.*?)\]/gm;
-
-	//<email|url> which is not html tag
-	var _reAutoLink = /<(?!\/[a-zA-Z])(?:([^"'>\s]+@[^"'\s>]+)|([^"'>\s]+:\/\/[^"'>\s]+))>/gm;
-
-	function parseInline_cb0 ( m, email, url ) {
-		if ( email ) {
-			return '&lt;<a href="mailto:'+escapeHtmlAttr(email)+'">'+email+'</a>&gt;';
-		}
-		else /*if ( url )*/ {
-			return '&lt;<a href="'+escapeHtmlAttr(url)+'">'+url+'</a>&gt;';
+	function Markdown ( options ) {
+		this._options = Markdown.DEFAULT_OPTIONS.duplicate();
+		if ( Object.isObject( options ) ) {
+			this._options.merge( options );
 		}
 	}
 
-	function parseInline ( text, ret ) {
-
-		function parseInline_cb1 ( m, isimg, text, url, title ) {
-			if ( isimg ) {
-				var title = ' title="'+escapeHtmlAttr(text||title)+'"';
-				title = title.length > 9 ? title : '';
-				return '<img src="'+escapeHtmlAttr(url)+'"'+title+' />';
-			}
-			else {
-				if ( !text ) {
-					return m;
-				}
-				var title = ' title="'+escapeHtmlAttr(title||'')+'"';
-				title = title.length > 9 ? title : '';
-				return '<a href="'+escapeHtmlAttr(url)+'"'+title+'>'+parseInline(text, ret)+'</a>';
-			}
-		}
-
-		function parseInline_cb2 ( m, isimg, text, id ) {
-			if ( !id ) {
-				if ( text ) {
-					id = text;
-				}
-				else {
-					return m;
-				}
-			}
-			if ( !isimg && id.charAt( 0 ) == '^' ) {
-				return '<a href="#'+escapeHtmlAttr(id.substr(1).toLowerCase())+'">'+parseInline(text, ret)+'</a>';
-			}
-			else {
-				var ref = ret.references[ id.toLowerCase() ];
-				if ( ref === undefined ) {
-					return m;
-				}
-				if ( isimg ) {
-					var title = ' title="'+escapeHtmlAttr(text||ref.title)+'"';
-					title = title.length > 9 ? title : '';
-					return '<img src="'+escapeHtmlAttr(ref.url)+'"'+title+' />';
-				}
-				else {
-					if ( !text ) {
-						return m;
-					}
-					var title = ' title="'+escapeHtmlAttr(ref.title||'')+'"';
-					title = title.length > 9 ? title : '';
-					return '<a href="'+escapeHtmlAttr(ref.url)+'"'+title+'>'+parseInline(text, ret)+'</a>';
-				}
-			}
-		}
-
-		function parseInline_cb3 ( m, m1, m2, m3 ) {
-			var tag = _emphasisTags[ m2 ];
-			return m1 + '<'+tag+'>' + parseInline( m3, ret ) + '</'+tag+'>';
-		}
-
-		function parseInline_cb4 ( m, dummyprefix, code ) {
-			var tag = ret.codeInlineTag;
-			var cls = ret.codeInlineClass ? ' class="'+ret.codeInlineClass+'"' : '';
-			code = escapeHtmlAttr( code );
-			code = ret.codeCallback ? ret.codeCallback( code ) : code;
-			return dummyprefix + '<'+tag+cls+'>' + code + '</'+tag+'>';
-		}
-
-		text = text.replace( _reInlineCode1, parseInline_cb4 );
-		text = text.replace( _reInlineCode2, parseInline_cb4 );
-		text = text.replace( _reAutoLink, parseInline_cb0 );
-		text = text.replace( _reLink1, parseInline_cb1 );
-		text = text.replace( _reLink2, parseInline_cb2 );
-		text = text.replace( _reUnderline, parseInline_cb3 );
-		text = text.replace( _reStrong1, parseInline_cb3 );
-		text = text.replace( _reStrong2, parseInline_cb3 );
-		text = text.replace( _reEm1, parseInline_cb3 );
-		text = text.replace( _reEm2, parseInline_cb3 );
-		text = text.replace( _reStrike1, parseInline_cb3 );
-		text = text.replace( _reStrike2, parseInline_cb3 );
-		if ( ret.noCodeCallback ) {
-			text = ret.noCodeCallback( text );
-		}
-
-		return parseBrBs( text );
-	}
-
-	function parseListItems ( text, spaces, type, ret ) {
-		type = type.length == 1 ? '[\\+\\-\\*]' : '\\d+\\.';
-		var _reListItem = new RegExp( '^(?: *'+type+' ((?:[^\\n]|\\n(?!'+spaces+type+' ))*))', 'gm' );
-		var m;
-		while ( m = _reListItem.exec( text ) ) {
-			ret.html += '<li>';
-			parseMarkdown( m[1], ret, false );
-			ret.html += '</li>';
-		}
-	}
-
-	var _reList = /^(?:( *)([\+\-\*]|\d+\.) (?:[^\n]|\n(?!\n))*)+(?:\n\n|$)/gm;
-	function parseList ( text, ret ) {
-		var m = _reList.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-
-		//the match
-		var tag = m[2].length == 1 ? 'ul' : 'ol';
-		ret.html += '<'+tag+'>';
-		parseListItems( m[0], m[1], m[2], ret );
-		ret.html += '</'+tag+'>'
-
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-		
-		return true;
-	}
-
-
-	var _reHeader = /^(#+) ((?:[^\n]+?(?:  \n)?)+?)#*$/gm;
-	function parseHeaders ( text, ret ) {
-		var m = _reHeader.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-
-		//the match
-		var tag = 'h'+Math.min( m[1].length , 6 );
-		ret.html += '<'+tag+'>';
-		parseMarkdown( m[2], ret, false );
-		ret.html += '</'+tag+'>'
-		
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-
-		return true;
-	}
-
-	var _reAltHeader = /^((?:[^\n](?:  \n[^\n=\-])?)+?)\n(?:(=){3,}|(-){3,})$/gm;
-	function parseAltHeaders ( text, ret ) {
-
-		var m = _reAltHeader.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-		
-		var tag = 'h'+(m[2] ? '1' : '2');
-		ret.html += '<'+tag+'>';
-		parseMarkdown( m[1], ret, false );
-		ret.html += '</'+tag+'>';
-		
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-
-		return true;
-	}
-
-
-	 //private static
-	var _htmlEscapes = {
-		'&': '&amp;',
-		'<': '&lt;',
-		'>': '&gt;',
-		'"': '&quot;',
-		"'": '&#27;'
-	};
-
-	//private static
-	var _htmlEscaper = /[&<>"']/g;
-	var _htmlEscaper2 = /[&<>]/g;
-
-	function escapeHtml_cb ( match ) {
-		return _htmlEscapes[match]; 
-	}
-
-	function escapeHtml ( text ) {
-		return text.replace( _htmlEscaper, escapeHtml_cb );
-	}
-
-	function escapeHtmlBasic ( text ) {
-		return text.replace( _htmlEscaper2, escapeHtml_cb );
-	}
-
-	var _mdEscaper = /\\[\\`\*_{}\[\]()#+\-\.!~<> \t\/\|]/gm;
-	var _mdEscaper2 =  /[\\`\*_{}\[\]()#+\-\.!~<>\/\|]/gm;
-
-	function escapeMarkdown_cb ( match ) {
-		return '&#'+match.charCodeAt( 1 )+';'; 
-	}
-
-	function escapeMarkdown_cb2 ( match ) {
-		return '&#'+match.charCodeAt( 0 )+';'; 
-	}
-
-	function escapeMarkdown ( text ) {
-		return text.replace( _mdEscaper, escapeMarkdown_cb );
-	}
-
-	function escapeMarkdownAttr ( text ) {
-		return text.replace( _mdEscaper2, escapeMarkdown_cb2 );
-	}
-
-	function escapeHtmlAttr ( text ) {
-		return escapeMarkdownAttr( escapeHtml( text ) );
-	}
-
-	var _reRef1 = /\[([^\^].*?)\]: ?([^\s]+)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\n?/gm;
-	function getReferences ( text, ret ) {
-		return text.replace( _reRef1, function ( m, id, url, title ) {
-			ret.references[id.toLowerCase()] = { url: url, title: title };
-			return '';
-		} );
-	}
-
-	function markdownWithoutCode ( text, ret ) {
-		return getReferences( escapeMarkdown( text ), ret );
-	}
-
-	function codeBlock ( code, lang, ret ) {
-
-		var str = '';
-
-		var cls = lang || ret.codeDefaultLang;
-		if ( ret.codeBlockClass ) {
-			cls = ( cls ? ret.codeLangClassPrefix + cls + ' ' : '' ) + ret.codeBlockClass;
-		}
-		if ( cls ) {
-			cls = ' class="'+cls+'"';
-		}
-		
-		str += ( ret.codeBlockWrapPre ? '<pre>' : '' ) + '<code'+cls+'>';
-		
-		code = ret.codeBlockCallback ?
-						ret.codeBlockCallback( code, lang, ret.codeDefaultLang  ) :
-						escapeHtmlBasic( code );
-
-		if ( ret.codeCallback ) {
-			code = ret.codeCallback( code );
-		}
-
-		str += code;
-		
-		str += '</code>' + ( ret.codeBlockWrapPre ? '</pre>' : '' );
-
-		return str;
-	}
-
-	var _reTrimCodeLeft1 = /^    /gm;
-	var _reTrimCodeLeft2 = /^\t/gm;
-	var _reCode1 = /^`{3,}([^\n]+)?\n(?:([\s\S]+?)\n)?`{3,}$/gm;
-	var _reCode2 = /^~{3,}([^\n]+)?\n(?:([\s\S]+?)\n)?~{3,}$/gm;
-	var _reCode3 = /(?:\n\n|^)(\t(?:[^\n]|\n\t)+)(?:\n\n|$|\n(?!\t))/g;
-	var _reCode4 = /(?:\n\n|^)(    (?:[^\n]|\n    )+)(?:\n\n|$|\n(?!    ))/g;
-	function parseCode ( text, ret ) {
-
-		var m = _reCode1.exec( text ) || _reCode2.exec( text );
-		var alt = false;
-
-		if ( m === null ) {
-			alt = true;
-			m = _reCode3.exec( text );
-			if ( m === null ) {
-				m = _reCode4.exec( text );
-				if ( m === null) {
-					m = matchRecursive( text, '<code[^>]*>\n?', '</code>', 'i' );
-					if ( m === null ) {
-						return false;
-					}
-					else {
-						//before the match
-						parseMarkdown( markdownWithoutCode( text.substr( 0, m.start ), ret ), ret, true );
-						
-						//the match
-						//ret.html += m.match;
-						ret.html += codeBlock( text.slice( m.left.end, m.right.start ), null, ret );
-
-						//after the match
-						parseMarkdown( text.substr( m.end ), ret, true );
-
-						return true;
-					}
-				}
-				else {
-					m[1] = m[1].replace( _reTrimCodeLeft1, '' );
-				}
-			}
-			else {
-				m[1] = m[1].replace( _reTrimCodeLeft2, '' );
-			}
-		}
-
-		//before the match
-		parseMarkdown( markdownWithoutCode( text.substr( 0, m.index ), ret ), ret, true );
-
-		ret.html += codeBlock( m[ alt ? 1 : 2 ], alt ? null : m[1], ret );
-		
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-
-		return true;
-	}
-
-
-	var _reHr = /(?:^|\n\n)[\*_\-]{3,}(?:$|\n\n)/gm;
-	function parseHr ( text, ret ) {
-		var m = _reHr.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-
-		//the match
-		ret.html += '<hr/>'
-		
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-
-		return true;
-	}
-
-	var _reBlockquote = /^(> (?:[^\n]|\n>)+)(?:\n\n|$)/gm;
-	var _reTrimBlockquoteLeft = /^> /gm;
-	function parseBlockquote ( text, ret ) {
-		var m = _reBlockquote.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-
-		m[1] = m[1].replace( _reTrimBlockquoteLeft, '' );
-
-		//the match
-		ret.html += '<blockquote>';
-		parseMarkdown( m[1], ret, false );
-		ret.html += '</blockquote>';
-
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-		
-		return true;
-	}
-
-
-	var _strReTableRow = '(?:^ *\\|?(?:[^\\|\\n]+\\|[^\\|\\n]+)+(?:\\|[^\\|\\n]+)?\\|? *\\n?)';
-	var _strReTableHead = '(?:^ *\\|?(?: *:?-+?:? *\\| *:?-+:? *)+(?:\\| *:?-+:? *)?\\|? *\\n?)';
-	var _reTrimTableLeft = /^ *\|? */gm;
-	var _reTrimTableRight = / *\|? *$/gm;
-	var _reTable = new RegExp( '('+_strReTableRow+')('+_strReTableHead+')('+_strReTableRow+'*)', 'gm' );
-	function parseTable ( text, ret ) {
-		var m = _reTable.exec( text );
-		if ( m === null ) {
-			return false;
-		}
-
-		var m0 = m[0].trim().replace( _reTrimTableLeft, '' ).replace( _reTrimTableRight, '' );
-
-		//before the match
-		parseMarkdown( text.substr( 0, m.index ), ret, true );
-
-		//the match
-		ret.html += '<table class="'+ret.tableClass+'">';
-		var rows = m0.split( '\n' );
-		var aligns = [];
-		//captions, if any
-		if ( m[1] ) {
-			var captions = rows.shift().split( '|' );
-			ret.html += '<thead><tr>';
-			for ( var i = 0, iend = captions.length; i < iend; ++i ) {
-				ret.html += '<th class="'+ret.thClass+'">';
-				parseMarkdown( captions[i].trim(), ret, false );
-				ret.html += '</th>';
-			}
-			ret.html += '</tr></thead>';
-		}
-		//aligns, if any
-		if ( m[2] ) {
-			aligns = rows.shift().split( '|' );
-			for ( var i = 0, iend = aligns.length; i < iend; ++i ) {
-				var col = aligns[i].trim();
-				var left = col.charAt( 0 ) == ':';
-				var right = col.charAt( col.length - 1 ) == ':';
-				if ( left && right ) {
-					aligns[i] = ret.tdCenterClass;
-				}
-				else if ( right ) {
-					aligns[i] = ret.tdRightClass;
-				}
-				else if ( left ) {
-					aligns[i] = ret.tdLeftClass;
-				}
-				else {
-					aligns[i] = '';
-				}
-			}
-		}
-
-		//normal rows
-		ret.html += '<tbody>';
-		for ( var i = 0, iend = rows.length; i < iend; ++i ) {
-			var cols = rows[i].split( '|' );
-			ret.html += '<tr>';
-			for ( var j = 0, jend = cols.length; j < jend; ++j ) {
-				var cls = ' class="'+(aligns.length>j?aligns[j]:'')+'"';
-				cls = cls.length > 9 ? cls : '';
-				ret.html += '<td'+cls+'>';
-				parseMarkdown( cols[j].trim(), ret, false );
-				ret.html += '</td>';
-			}
-			ret.html += '</tr>';
-		}
-		ret.html += '<tbody>';
-		ret.html += '</table>';
-
-		//after the match
-		parseMarkdown( text.substr( m.index + m[0].length ), ret, true );
-		
-		return true;
-	}
-
-	function parseMarkdown ( text, ret, needp ) {
-		
-		if ( !parseCode( text, ret ) ) {
-			text = markdownWithoutCode( text, ret );
-		}
-		else {
-			return ret.html;
-		}
-
-		if (
-		
-			!parseHeaders( text, ret ) &&
-			!parseAltHeaders( text, ret ) &&
-			!parseList( text, ret ) &&
-			!parseBlockquote( text, ret ) &&
-			!parseTable( text, ret ) &&
-			!parseHr( text, ret ) &&
-			(text = parseInline( text, ret )).length > 0
-
-		) {
-			if ( text.indexOf( '\n\n' ) >= 0 ) {
-				text = text.split( '\n\n' ).join( '</p><p>' );
-				needp = true;
-			}
-			if ( needp ) {
-				ret.html += '<p>' + text + '</p>';
-			}
-			else {
-				ret.html += text;
-			}
-		}
-
-		return ret.html;
-	}
-
-
-	function toHtml ( text, options ) {
-		
-		var ret = {
+	Markdown.defineStatic( {
+		DEFAULT_OPTIONS: {
 			tableClass: 'table stripped',
 			thClass: 'text-left',
 			tdLeftClass: 'text-left',
@@ -651,24 +175,866 @@
 			codeInlineClass: 'inline',
 			codeInlineTag: "code",
 			needParagraph: false
+		}
+	} );
+
+	
+	
+	
+	
+
+
+
+	
+
+	var RE_STAGES = [];
+
+
+
+
+
+
+
+		//private static
+		var _htmlEscapes = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#27;'
 		};
 
-		if ( options instanceof Object ) {
-			ret.merge( options );
+		//private static
+		var RE_HTML_ESCAPES = /[&<>"']/g;
+		var RE_HTML_ESCAPES_BASIC = /[&<>]/g;
+
+		function RECB_HTML_ESCAPES ( match ) {
+			return _htmlEscapes[match]; 
 		}
 
-		ret.html = '';
-		ret.references = {};
+		function _escapeHtml ( text ) {
+			return text.replace( RE_HTML_ESCAPES, RECB_HTML_ESCAPES );
+		}
 
-		text = text.replace( /\r\n|\r/g, '\n' );
+		function _escapeHtmlBasic ( text ) {
+			return text.replace( RE_HTML_ESCAPES_BASIC, RECB_HTML_ESCAPES );
+		}
+
+
+
+
+		var RE_TRIM_CODE_INDENT_SPACE = /^    /gm;
+		var RE_TRIM_CODE_INDENT_TAB = /^\t/gm;
+		function _codeBlock ( code, lang, options ) {
+
+			var str = '';
+
+			var cls = lang || options.codeDefaultLang;
+			if ( cls ) {
+				cls = options.codeLangClassPrefix + cls;
+			}
+			if ( options.codeBlockClass ) {
+				cls = ( cls ? cls + ' ' : '' ) + options.codeBlockClass;
+			}
+			if ( cls ) {
+				cls = ' class="'+cls+'"';
+			}
+			else {
+				cls = '';
+			}
 			
-		return parseMarkdown( text, ret, ret.needParagraph );
+			str += ( options.codeBlockWrapPre ? '<pre>' : '' ) + '<code'+cls+'>';
+			
+			code = options.codeBlockCallback ?
+							options.codeBlockCallback( code, lang, options.codeDefaultLang  ) :
+							_escapeHtmlBasic( code );
+
+			if ( options.codeCallback ) {
+				code = options.codeCallback( code );
+			}
+
+			str += code;
+			
+			str += '</code>' + ( options.codeBlockWrapPre ? '</pre>' : '' );
+
+			return str;
+		}
+
+		// code block ```
+		RE_STAGES.push( {
+			re: /^`{3,}([^\n]+)?\n(?:([\s\S]+?)\n)?`{3,}$/gm,
+			cb: function ( unparsed, m ) {
+				unparsed.html += _codeBlock( m[2], m[1], unparsed._options );
+			}
+		} );
+
+		// code block ~~~
+		RE_STAGES.push( {
+			re: /^~{3,}([^\n]+)?\n(?:([\s\S]+?)\n)?~{3,}$/gm,
+			cb: function ( unparsed, m ) {
+				unparsed.html += _codeBlock( m[2], m[1], unparsed._options );
+			}
+		} );
+
+		// code indented with tab
+		RE_STAGES.push( {
+			re: /(?:\n\n|^)(\t(?:[^\n]|\n\t)+)(?:\n\n|$|\n(?!\t))/g,
+			cb: function ( unparsed, m ) {
+				unparsed.html += _codeBlock( m[1].replace( RE_TRIM_CODE_INDENT_TAB, '' ), null, unparsed._options );
+			}
+		} );
+
+		// code indented with four spaces
+		RE_STAGES.push( {
+			re: /(?:\n\n|^)(    (?:[^\n]|\n    )+)(?:\n\n|$|\n(?!    ))/g,
+			cb: function ( unparsed, m ) {
+				unparsed.html += _codeBlock( m[1].replace( RE_TRIM_CODE_INDENT_SPACE, '' ), null, unparsed._options );
+			}
+		} );
+
+		// html code tag
+		RE_STAGES.push( {
+			re: { start: '<code[^>]*>', end: '</code>', flags: 'i' },
+			cb: function ( unparsed, m ) {
+				 unparsed.html += _codeBlock( m.inner.match, null, unparsed._options );
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// lists
+		function _parseListItems ( text, spaces, type, unparsed ) {
+			type = type.length == 1 ? '[\\+\\-\\*]' : '\\d+\\.';
+			var _reListItem = new RegExp( '^(?: *'+type+' ((?:[^\\n]|\\n(?!'+spaces+type+' ))*))', 'gm' );
+			var m;
+			while ( m = _reListItem.exec( text ) ) {
+				unparsed.html += '<li>';
+				//start over stages here cause we can have code inside lists which is not matched so far
+				//bacase the extra spaces
+				new Unparsed( m[1], unparsed ).parse();
+				unparsed.html += '</li>';
+			}
+		}
+
+		RE_STAGES.push( {
+			re: /^(?:( *)([\+\-\*]|\d+\.) (?:[^\n]|\n(?!\n))*)+(?:\n\n|$)/gm,
+			cb: function ( unparsed, m ) {
+				var tag = m[2].length == 1 ? 'ul' : 'ol';
+				unparsed.html += '<'+tag+'>';
+				_parseListItems( m[0], m[1], m[2], unparsed );
+				unparsed.html += '</'+tag+'>'
+			}
+		}  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// block quotes
+		var RE_TRIM_BLOCKQUOTE = /^> /gm;
+		RE_STAGES.push( {
+			re: /^(> (?:[^\n]|\n>)+)(?:\n\n|$)/gm,
+			cb: function ( unparsed, m ) {
+				unparsed.html += '<blockquote>';
+				//start over stages here cause we can have code inside lists which is not matched so far
+				//bacase the extra spaces
+				new Unparsed( m[1].replace( RE_TRIM_BLOCKQUOTE, '' ), unparsed ).parse();
+				unparsed.html += '</blockquote>';
+			},
+			dbg: true
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		var RE_MD_ESCAPES = /\\[\\`\*_{}\[\]()#+\-\.!~<> \t\/\|]/gm;
+	
+		function RECB_MD_ESCAPES ( match ) {
+			return '&#'+match.charCodeAt( 1 )+';'; 
+		}
+
+		function _escapeMarkdown ( text ) {
+			return text.replace( RE_MD_ESCAPES, RECB_MD_ESCAPES );
+		}
+
+		var RE_REF1 = /\[([^\^].*?)\]: ?([^\s]+)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\n?/gm;
+		function _getReferences ( text, markdown ) {
+			return text.replace( RE_REF1, function ( m, id, url, title ) {
+				markdown._ret.references[id.toLowerCase()] = { url: url, title: title };
+				return '';
+			} );
+		}
+
+		// at this stage we have no code blocks so do escaping and get all references
+		RE_STAGES.push( {
+			cb: function ( unparsed ) {
+				unparsed._text = _getReferences( _escapeMarkdown( unparsed._text ), unparsed._markdown );
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// headers ###
+		RE_STAGES.push( {
+			re: /^(#+) ((?:[^\n]+?(?:  \n)?)+?)#*$/gm,
+			cb: function( unparsed, m ) {
+				var tag = 'h'+Math.min( m[1].length , 6 );
+				unparsed.html += '<'+tag+'>';
+				new Unparsed( m[2], unparsed, true ).parse();
+				unparsed.html += '</'+tag+'>'
+			}
+		} );
+
+		// headers --- ===
+		RE_STAGES.push( {
+			re: /^((?:[^\n](?:  \n[^\n=\-])?)+?)\n(?:(=){3,}|(-){3,})$/gm,
+			cb: function( unparsed, m ) {
+				var tag = 'h'+(m[2] ? '1' : '2');
+				unparsed.html += '<'+tag+'>';
+				new Unparsed( m[1], unparsed, true ).parse();
+				unparsed.html += '</'+tag+'>'
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+
+
+
+		// tables
+		var STR_RE_TABLE_ROW = '(?:^ *\\|?(?:[^\\|\\n]+\\|[^\\|\\n]+)+(?:\\|[^\\|\\n]+)?\\|? *\\n?)';
+		var STR_RE_TABLE_HEAD = '(?:^ *\\|?(?: *:?-+?:? *\\| *:?-+:? *)+(?:\\| *:?-+:? *)?\\|? *\\n?)';
+		var RE_TRIM_TABLE_LEFT = /^ *\|? */gm;
+		var RE_TRIM_TABLE_RIGHT = / *\|? *$/gm;
+		RE_STAGES.push( {
+			re: new RegExp( '('+STR_RE_TABLE_ROW+')('+STR_RE_TABLE_HEAD+')('+STR_RE_TABLE_ROW+'*)', 'gm' ),
+			cb: function ( unparsed, m ) {
+				var m0 = m[0].trim().replace( RE_TRIM_TABLE_LEFT, '' ).replace( RE_TRIM_TABLE_RIGHT, '' );
+
+				//the match
+				unparsed.html += '<table class="'+unparsed._options.tableClass+'">';
+				var rows = m0.split( '\n' );
+				var aligns = [];
+				//captions, if any
+				if ( m[1] ) {
+					var captions = rows.shift().split( '|' );
+					unparsed.html += '<thead><tr>';
+					for ( var i = 0, iend = captions.length; i < iend; ++i ) {
+						unparsed.html += '<th class="'+unparsed._options.thClass+'">';
+						new Unparsed( captions[i].trim(), unparsed, true ).parse();
+						unparsed.html += '</th>';
+					}
+					unparsed.html += '</tr></thead>';
+				}
+				//aligns, if any
+				if ( m[2] ) {
+					aligns = rows.shift().split( '|' );
+					for ( var i = 0, iend = aligns.length; i < iend; ++i ) {
+						var col = aligns[i].trim();
+						var left = col.charAt( 0 ) == ':';
+						var right = col.charAt( col.length - 1 ) == ':';
+						if ( left && right ) {
+							aligns[i] = unparsed._options.tdCenterClass;
+						}
+						else if ( right ) {
+							aligns[i] = unparsed._options.tdRightClass;
+						}
+						else if ( left ) {
+							aligns[i] = unparsed._options.tdLeftClass;
+						}
+						else {
+							aligns[i] = '';
+						}
+					}
+				}
+
+				//normal rows
+				unparsed.html += '<tbody>';
+				for ( var i = 0, iend = rows.length; i < iend; ++i ) {
+					var cols = rows[i].split( '|' );
+					unparsed.html += '<tr>';
+					for ( var j = 0, jend = cols.length; j < jend; ++j ) {
+						var cls = ' class="'+(aligns.length>j?aligns[j]:'')+'"';
+						cls = cls.length > 9 ? cls : '';
+						unparsed.html += '<td'+cls+'>';
+						new Unparsed( cols[j].trim(), unparsed, true ).parse();
+						unparsed.html += '</td>';
+					}
+					unparsed.html += '</tr>';
+				}
+				unparsed.html += '<tbody>';
+				unparsed.html += '</table>';
+
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// hr
+		RE_STAGES.push( {
+			re: /(?:^|\n\n)[\*_\-]{3,}(?:$|\n\n)/gm,
+			cb: function ( unparsed, m ) {
+				unparsed.html += '<hr/>';
+			}
+		} );
+
+
+
+
+
+
+
+
+
+		var RE_STAGE_INLINE = RE_STAGES.length;
+
+
+		// inline code ```asd```
+
+		var RE_MD_ESCAPES_ATTR =  /[\\`\*_{}\[\]()#+\-\.!~<>\/\|]/gm;
+		function RECB_MD_ESCAPES_ATTR ( match ) {
+			return '&#'+match.charCodeAt( 0 )+';'; 
+		}
+
+		function _escapeMarkdownAttr ( text ) {
+			return text.replace( RE_MD_ESCAPES_ATTR, RECB_MD_ESCAPES_ATTR );
+		}
+
+		function _escapeHtmlAttr ( text ) {
+			return _escapeMarkdownAttr( _escapeHtml( text ) );
+		}
+
+
+		function _inlineCode ( unparsed, m ) {
+			var tag = unparsed._options.codeInlineTag;
+			var cls = unparsed._options.codeInlineClass ? ' class="'+unparsed._options.codeInlineClass+'"' : '';
+			var code = _escapeHtmlAttr( m[2] );
+			code = unparsed._options.codeCallback ? unparsed._options.codeCallback( code ) : code;
+			unparsed.html += m[1] + '<'+tag+cls+'>' + code + '</'+tag+'>';
+		}
+
+		RE_STAGES.push( {
+			re: /([^`]|^)(?:```)(?!`) ?([\s\S]+?) ?```(?!`)/gm,
+			cb: _inlineCode,
+			inline: true
+		} );
+
+		// inline code ``asd``
+		RE_STAGES.push( {
+			re: /([^`]|^)(?:``)(?!`) ?([\s\S]+?) ?``(?!`)/gm,
+			cb: _inlineCode,
+			inline: true
+		} );
+
+		// inline code `asd`
+		RE_STAGES.push( {
+			re: /([^`]|^)(?:`(?!`))([\s\S]+?)`(?!`)/gm,
+			cb: _inlineCode,
+			inline: true
+		} );
+
+
+
+
+
+
+
+
+
+
+		//<email|url> which is not html tag
+		RE_STAGES.push( {
+			re: /<(?!\/[a-zA-Z])(?:([^"'>\s]+@[^"'\s>]+)|([^"'>\s]+:\/\/[^"'>\s]+))>/gm,
+			cb: function ( unparsed, m ) {
+				if ( m[1] ) {
+					unparsed.html += '&lt;<a href="mailto:'+_escapeHtmlAttr(m[1])+'">'+m[1]+'</a>&gt;';
+				}
+				else /*if ( m[2] )*/ {
+					unparsed.html += '&lt;<a href="'+_escapeHtmlAttr(m[2])+'">'+m[2]+'</a>&gt;';
+				}
+			},
+			inline: true
+		} );
+
+
+
+
+
+
+		// in place image
+		RE_STAGES.push( {
+			re: /!\[(.*?)\]\((.*?)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\)/gm,
+			cb: function ( unparsed, mm ) {
+				var m = mm[0], text = mm[1], url = mm[2], title = mm[3];
+				var title = ' title="'+_escapeHtmlAttr(text||title)+'"';
+				title = title.length > 9 ? title : '';
+				unparsed.html += '<img src="'+_escapeHtmlAttr(url)+'"'+title+' />';
+			},
+			inline: true
+		} );
+
+
+
+
+		// in place link
+		RE_STAGES.push( {
+			re: /\[(.*?)\]\((.*?)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\)/gm,
+			cb: function ( unparsed, mm ) {
+				var m = mm[0], text = mm[1], url = mm[2], title = mm[3];
+				if ( !text ) {
+					unparsed.html += m;
+					return;
+				}
+				var title = ' title="'+_escapeHtmlAttr(title||'')+'"';
+				title = title.length > 9 ? title : '';
+				unparsed.html += '<a href="'+_escapeHtmlAttr(url)+'"'+title+'>';
+				new Unparsed( text, unparsed, true ).parse();
+				unparsed.html += '</a>';
+			},
+			inline: true
+		} );
+
+
+
+		// reference image
+		RE_STAGES.push( {
+			re: /!\[(.*?)\]\[(.*?)\]/gm,
+			cb: function ( unparsed, mm ) {
+				var m = mm[0], text = mm[1], id = mm[2];
+				if ( !id ) {
+					if ( text ) {
+						id = text;
+					}
+					else {
+						unparsed.html += m;
+						return;
+					}
+				}
+				var ref = unparsed._markdown._ret.references[ id.toLowerCase() ];
+				if ( ref === undefined ) {
+					unparsed.html += m;
+					return;
+				}
+				var title = ' title="'+_escapeHtmlAttr(text||ref.title)+'"';
+				title = title.length > 9 ? title : '';
+				unparsed.html += '<img src="'+_escapeHtmlAttr(ref.url)+'"'+title+' />';
+			}
+		} );
+
+			
+		// reference link
+		RE_STAGES.push( {
+			re: /\[(.*?)\]\[(.*?)\]/gm,
+			cb: function ( unparsed, mm ) {
+				var m = mm[0], text = mm[1], id = mm[2];
+				if ( !id ) {
+					if ( text ) {
+						id = text;
+					}
+					else {
+						unparsed.html += m;
+						return;
+					}
+				}
+				if ( id.charAt( 0 ) == '^' ) {
+					unparsed.html += '<a href="#'+_escapeHtmlAttr(id.substr(1).toLowerCase())+'">';
+					new Unparsed( text, unparsed, true ).parse();
+					unparsed.html += '</a>';
+				}
+				else {
+					var ref = unparsed._markdown._ret.references[ id.toLowerCase() ];
+					if ( ref === undefined ) {
+						unparsed.html += m;
+						return;
+					}
+					if ( !text ) {
+						unparsed.html += m;
+						return;
+					}
+					var title = ' title="'+_escapeHtmlAttr(ref.title||'')+'"';
+					title = title.length > 9 ? title : '';
+					unparsed.html += '<a href="'+_escapeHtmlAttr(ref.url)+'"'+title+'>';
+					new Unparsed( text, unparsed, true ).parse();
+					unparsed.html += '</a>';
+				}
+			}
+		} );
+
+
+
+
+
+
+
+		// emphasis elements
+		var _emphasisTags = {
+			'___': 'u',
+			'**': 'strong',
+			'__': 'strong',
+			'*': 'em',
+			'_': 'em',
+			'--': 'strike',
+			'~~': 'strike'
+		};
+
+		function _emphasis ( unparsed, m ) {
+			var tag = _emphasisTags[ m[2] ];
+			unparsed.html += m[1] + '<'+tag+'>';
+			new Unparsed( m[3], unparsed, true ).parse();
+			unparsed.html += '</'+tag+'>';
+		}
+
+		// underline
+		RE_STAGES.push( {
+			re: /([^_]|^)(___(?!_))([\s\S]+?)___(?!_)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		// strong **
+		RE_STAGES.push( {
+			re: /([^\*]|^)(\*\*(?!\*))([\s\S]+?)\*\*(?!\*)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		// strong __
+		RE_STAGES.push( {
+			re: /([^_]|^)(__(?!_))([\s\S]+?)__(?!_)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		// em *
+		RE_STAGES.push( {
+			re: /([^\*]|^)(\*(?!\*))([\s\S]+?)\*(?!\*)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		//em _
+		RE_STAGES.push( {
+			re:  /([^_a-zA-Z0-9]|^)(_(?!_))((?:[^_]|[a-zA-Z0-9_]+_+[a-zA-Z0-9_]+)+?)_(?![_a-zA-Z0-9])/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		// strike --
+		RE_STAGES.push( {
+			re: /([^\-]|^)(--(?!-))([\s\S]+?)--(?!-)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+		// strike ~~
+		RE_STAGES.push( {
+			re: /([^~]|^)(~~(?!~))([\s\S]+?)~~(?!-)/gm,
+			cb: _emphasis,
+			inline: true
+		} );
+
+
+
+		
+
+		
+
+		
+
+		
+
+
+		
+
+
+		
+		// call no code callback if any
+		RE_STAGES.push( {
+			cb: function ( unparsed ) {
+				if ( unparsed._options.noCodeCallback ) {
+					unparsed._text = unparsed._options.noCodeCallback( unparsed._text );
+				}
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+		// br's and final touch
+		var RE_BR = /  \n/gm;
+		var RE_BACKSPACE = /(.)\\b/gm;
+		var RE_REF2 = /\[(\^.+?)\]:\n?/gm;
+		function RECB_REF2 ( m, id ) {
+			return '<a name="'+_escapeHtmlAttr(id.substr(1).toLowerCase())+'"></a>';
+		}
+
+		RE_STAGES.push( {
+			cb: function ( unparsed ) {
+				unparsed._text = unparsed._text
+										.replace( RE_BACKSPACE, '' )
+										.replace( RE_BR, '<br/>' )
+										.replace( RE_REF2, RECB_REF2 );
+				if ( unparsed._trim ) {
+					unparsed._text = unparsed._text.trim();
+				}
+			}
+		} );
+
+
+
+
+
+
+
+
+
+		RE_STAGES.push( {
+			cb: function ( unparsed, needp ) {
+				var text = unparsed._text;
+				if ( text.length == 0 ) {
+					return;
+				}
+				if ( (unparsed._trim || needp ) && text.indexOf( '\n\n' ) >= 0 ) {
+					//console.log(text)
+					// text = text.split( '\n\n' ).join( '</p><p>' );
+					text = text.split( '\n\n' );
+					var ps = [];
+					for ( var i = 0, iend = text.length; i < iend; ++i ) {
+						text[i] = text[i].trim();
+						if ( text[i].length > 0 ) {
+							ps.push( text[i] );
+						}
+					}
+					text = ps.join( '</p><p>' );
+					needp = true;
+				}
+				if ( needp ) {
+					text = text.trim();
+					if ( text.length == 0 ) {
+						return;
+					}
+					unparsed.html += '<p>' + text  + '</p>';
+				}
+				else {
+					// unparsed.html += unparsed._inline ? text : text.trim();
+					unparsed.html += text;
+				}
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+	function Unparsed ( text, parent, nextstage ) {
+		this._text = text;
+		this.html = '';
+		if ( parent instanceof Unparsed ) {
+			this._markdown = parent._markdown;
+			this._ret = parent;
+			this._inline = parent._inline;
+			this._stage = nextstage ? parent._stage + 1 : ( parent._inline ? RE_STAGE_INLINE : 0 );
+			this._trim = !parent._inline;
+		}
+		else {
+			this._markdown = parent;
+			this._ret = parent._ret;
+			this._inline = false;
+			this._stage = 0;
+			this._trim = true;
+		}
+		this._options = this._markdown._options;
 	}
 
+	Unparsed.define( {
+		parse: function ( needParagraph ) {
+			for ( ;this._stage < RE_STAGES.length; ++this._stage ) {
+				var stage = RE_STAGES[this._stage];
+				var re = stage.re;
+				var m, start, end;
+				if ( re instanceof RegExp ) {
+					if ( m = re.exec( this._text ) ) {
+						start = m.index;
+						end = m.index + m[0].length;
+						re.lastIndex = 0;
+					}
+				}
+				else if ( re instanceof Object ) {
+					if ( m = _matchRecursive( this._text, re.start, re.end, re.flags ) ) {
+						start = m.match.start;
+						end = m.match.end;
+					}
+				}
+				else {
+					stage.cb( this, needParagraph );
+					continue;
+				}
+				this._inline = this._stage >= RE_STAGE_INLINE;
+				var needp = !this._inline;
+				if ( m ) {
+					//before the match
+					new Unparsed( this._text.substr( 0, start ), this, true ).parse( needp );
 
-	exports.Markdown = {
-		toHtml: toHtml,
-		escapeHtml: escapeHtml
-	};
+					//the match
+					stage.cb( this, m );
+					
+					//after the match
+					new Unparsed( this._text.substr( end ), this ).parse( needp );
 
-})( this );
+					if ( needParagraph && this._inline ) {
+						var t = new Unparsed( this.html, this );
+						RE_STAGES[ RE_STAGES.length - 1 ].cb( t, needParagraph );
+						this.html = t.html;
+					}
+
+					break;
+				}
+			}
+
+			this._ret.html += this.html;
+			return this;
+		}
+
+
+	} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	var RE_EOL = /\r\n|\r/g;
+	Markdown.define( {
+
+		/**
+		@def Markdown.Parsed function Markdown.parse ( text:string )
+		*/
+
+		/**
+		@def object Markdown.Parsed {
+			html:string,
+			references:Object,
+			headers:Array
+		}
+		*/
+		parse: function ( text ) {
+			this._ret = {
+				html: '',
+				references: {},
+				headers: []
+			};
+
+			new Unparsed( text.replace( RE_EOL, '\n' ), this ).parse( this._options.needParagraph );
+
+			return this._ret;
+		},
+
+		escapeHtml: _escapeHtml
+	} );
+
+	global.Markdown = Markdown;
+
+})( this, typeof global != 'undefined' ? global : window );
+
+

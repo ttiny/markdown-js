@@ -1,6 +1,6 @@
 "use strict";
 
-var toHtml = require( './Markdown.js' ).Markdown.toHtml;
+require( './Markdown.js' );
 var Fs = require( 'fs' );
 var html_beautify = require( './tests/js-beautify/beautify-html.js' ).html_beautify;
 
@@ -42,7 +42,7 @@ function test ( file ) {
 	}
 
 	try {
-		md = toHtml( md, { needParagraph: true, codeInlineClass: null, codeBlockClass: null } );
+		md = new Markdown( { needParagraph: true, codeInlineClass: null, codeBlockClass: null } ).parse( md ).html;
 	}
 	catch ( e ) {
 		console.error( '\nTEST FAILED in ' + file + '.md' );

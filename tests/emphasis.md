@@ -6,4 +6,4 @@ Combined emphasis with **asterisks and _underscores_**.
 
 Strikethrough uses two tildes. ~~Scratch this.~~ or two --dashes--.
 
-We have also ___unederline___ which GFM_does_not. _Our underscores are_smart_like_GFM__ _
+We have also ___unederline___ which GFM_does_not. _Our underscores are_smart_like_GFM__ \b_

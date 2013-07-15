@@ -1,7 +1,7 @@
 {
 	"name": "Markdown",
 	"description": "Somehow GFM compatible markdown parser",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"author": "Borislav Peev <borislav.asdf@gmail.com>",
 	"engine": [
 		"node >= 0.10"
@@ -11,7 +11,7 @@
 		"test": "node tests.js"
 	},
 	"dependencies": {
-		"Prototype": "https://github.com/Perennials/prototype-js/tarball/marster"
+		"Prototype": "https://github.com/Perennials/prototype-js/tarball/master"
 	},
 	"repository": {
 		"type": "git",
