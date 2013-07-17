@@ -69,9 +69,8 @@ options (with their default values):
   codeBlockCallback: null,
   // Callback that can be used to style the the code in code blocks.
   // If used this callback is responsible for escaping HTML entities inside the block.
-  // First argument is the text to be styles, second argument is the language of the text (if specified),
-  // third argument is the default language specified for parser (if any). Should return the new content
-  //  of the code block.
+  // First argument is the text to be styled, second argument is the language of the text (if any),
+  // third argument is the default language (options). Should return the new HTML.
 
   codeCallback: null,
   // Additional callback for code, can be used for further escaping. Will be called for both
