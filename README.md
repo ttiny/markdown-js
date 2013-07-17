@@ -2,7 +2,7 @@ Markdown
 --------
 Somehow GFM compatible markdown parser.
 
-This project was developed as supporting project for jsdocgen but can be used on its own.
+This project was developed as supporting project for [jsdocgen](https://github.com/Perennials/jsdocgen) but can be used on its own.
 
 
 Supported syntax
