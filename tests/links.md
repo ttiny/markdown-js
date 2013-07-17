@@ -12,6 +12,8 @@ Some text to show that the reference links can follow later.
 
 And we have [anchors][^anchor] too.
 
+Test one [link to header][].
+
 <http://autolink.com> <email@address.com>
 
 [arbitrary case-insensitive reference text]: https://www.mozilla.org
@@ -22,5 +24,7 @@ And we have [anchors][^anchor] too.
 	...some space to show anchors...
 </div>
 
+Link to header
+--------------
 [^anchor]:Anchors can be anywhere
 ===

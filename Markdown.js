@@ -1,7 +1,5 @@
 "use strict";
 
-require( 'Prototype' );
-
 (function ( exports, global ) {
 
 	// based on the work by Steven Levithan
@@ -78,108 +76,6 @@ require( 'Prototype' );
 	//console.log( _matchRecursive( '<code>asd <code>asd qwe</code>', '<code[^>]*>', '</code>' ) );
 	//console.log( _matchRecursive( '<code>asd <code>asd qwe', '<code[^>]*>', '</code>' ) );
 
-	
-
-
-
-
-	
-
-	
-
-
-	
-
-	/**
-	 * Somehow GFM compatible parser.
-	 * - [GFM](https://help.github.com/articles/github-flavored-markdown)
-	 * - [GFM Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-	 *
-	 * Additionally:
-	 * - ~~~ can be used for code blocks (GitHub also supports this)
-	 * - \[Internal link\]\[^anchor-name\]
-	 * - \[^anchor-name\]:
-	 * - This is \___underline\___.
-	 * - This is \--strike though\-- also.
-	 * - Line breaks inside headers.
-	 * - GFM line breaks are not respected.
-	 *   Always two trailing spaces and a newline to insert a line break.
-	 * - \\b will delete the previous character.
-	 * - Additional escape characters: ~ < > / | and space and tab.
-	 *
-	 * @def constructor string Markdown ( options:Markdown.Options|undefined )
-	 * @param Markdown string.
-	 * @param Options for the generated HTML.
-	 * @return Html string.
-	 * @author Borislav Peev <borislav.asdf@gmail.com>
-	 */
-
-	/**
-	@def object Markdown.Options {
-		tableClass:string = "'table stripped'",
-		thClass:string = "'text-left'"
-		tdLeftClass:string = "'text-left'",
-		tdRightClass:string = "'text-right'",
-		tdCenterClass:string = "'text-center'",
-		codeLangClassPrefix:string = "'lang-'",
-		codeDefaultLang:string = "null",
-		codeBlockWrapPre:bool = "false",
-		codeBlockClass:string = "block",
-		codeInlineClass:string = "inline",
-		codeInlineTag:string = "code",
-		codeBlockCallback:function = "null",
-		codeCallback:function = "null",
-		noCodeCallback:function = "null",
-		needParagraph:bool = "false"
-	}
-	@param Class attribute for table tag.
-	@param Class attribute for table > thead > th tag.
-	@param Class attribute for table > tbody > td tag to align the text left.
-	@param Class attribute for table > tbody > td tag to align the text right.
-	@param Class attribute for table > tbody > td tag to align the text center.
-	@param Class prefix for code blocks with specified language.
-	@param Default language for code blocks.
-	@param If to wrap code blocks with pre tag.
-	@param Adds a class name to the code blocks to be able to identify the from inline code.
-	@param Adds a class name to the inline code elements to be able to identify the from code block.
-	@param Chooses a different tag for 'inline code'.
-	@param Callback that can be used to style the the code in code blocks.
-	If used this callback is responsible for escaping HTML entities inside the block.
-	First argument is the text to be styles, second argument is the language of the text (if specified),
-	third argument is the default language specified for parser (if any). Should return the new content
-	of the code block.
-	@param Additional callback for code, can be used for further escaping. Will be called for both
-	code blocks and inline code. Accepts text and returns new text.
-	@param Callback to be used as extra parsing step after all markdown has been parsed. Will be executed
-	only for parts of the text that are not code. First argument is the text. Should return text.
-	@param If needs to wrap the top level element in paragraph.
-	*/
-
-	function Markdown ( options ) {
-		this._options = Markdown.DEFAULT_OPTIONS.duplicate();
-		if ( Object.isObject( options ) ) {
-			this._options.merge( options );
-		}
-	}
-
-	Markdown.defineStatic( {
-		DEFAULT_OPTIONS: {
-			tableClass: 'table stripped',
-			thClass: 'text-left',
-			tdLeftClass: 'text-left',
-			tdRightClass: 'text-right',
-			tdCenterClass: 'text-center',
-			codeLangClassPrefix: 'lang-',
-			codeDefaultLang: null,
-			codeBlockClass: 'block',
-			codeInlineClass: 'inline',
-			codeInlineTag: "code",
-			needParagraph: false
-		}
-	} );
-
-	
-	
 	
 	
 
@@ -323,7 +219,7 @@ require( 'Prototype' );
 				unparsed.html += '<li>';
 				//start over stages here cause we can have code inside lists which is not matched so far
 				//bacase the extra spaces
-				new Unparsed( m[1], unparsed ).parse();
+				new Unparsed( m[1], unparsed );
 				unparsed.html += '</li>';
 			}
 		}
@@ -358,10 +254,9 @@ require( 'Prototype' );
 				unparsed.html += '<blockquote>';
 				//start over stages here cause we can have code inside lists which is not matched so far
 				//bacase the extra spaces
-				new Unparsed( m[1].replace( RE_TRIM_BLOCKQUOTE, '' ), unparsed ).parse();
+				new Unparsed( m[1].replace( RE_TRIM_BLOCKQUOTE, '' ), unparsed );
 				unparsed.html += '</blockquote>';
-			},
-			dbg: true
+			}
 		} );
 
 
@@ -392,9 +287,9 @@ require( 'Prototype' );
 		}
 
 		var RE_REF1 = /\[([^\^].*?)\]: ?([^\s]+)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\n?/gm;
-		function _getReferences ( text, markdown ) {
+		function _getReferences ( text, ret ) {
 			return text.replace( RE_REF1, function ( m, id, url, title ) {
-				markdown._ret.references[id.toLowerCase()] = { url: url, title: title };
+				ret.references[id.toLowerCase()] = { url: url, title: title };
 				return '';
 			} );
 		}
@@ -402,49 +297,9 @@ require( 'Prototype' );
 		// at this stage we have no code blocks so do escaping and get all references
 		RE_STAGES.push( {
 			cb: function ( unparsed ) {
-				unparsed._text = _getReferences( _escapeMarkdown( unparsed._text ), unparsed._markdown );
+				unparsed._text = _getReferences( _escapeMarkdown( unparsed._text ), unparsed._ret );
 			}
 		} );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		// headers ###
-		RE_STAGES.push( {
-			re: /^(#+) ((?:[^\n]+?(?:  \n)?)+?)#*$/gm,
-			cb: function( unparsed, m ) {
-				var tag = 'h'+Math.min( m[1].length , 6 );
-				unparsed.html += '<'+tag+'>';
-				new Unparsed( m[2], unparsed, true ).parse();
-				unparsed.html += '</'+tag+'>'
-			}
-		} );
-
-		// headers --- ===
-		RE_STAGES.push( {
-			re: /^((?:[^\n](?:  \n[^\n=\-])?)+?)\n(?:(=){3,}|(-){3,})$/gm,
-			cb: function( unparsed, m ) {
-				var tag = 'h'+(m[2] ? '1' : '2');
-				unparsed.html += '<'+tag+'>';
-				new Unparsed( m[1], unparsed, true ).parse();
-				unparsed.html += '</'+tag+'>'
-			}
-		} );
-
-
-
-
 
 
 
@@ -461,12 +316,6 @@ require( 'Prototype' );
 
 
 		
-
-
-
-
-
-
 		// tables
 		var STR_RE_TABLE_ROW = '(?:^ *\\|?(?:[^\\|\\n]+\\|[^\\|\\n]+)+(?:\\|[^\\|\\n]+)?\\|? *\\n?)';
 		var STR_RE_TABLE_HEAD = '(?:^ *\\|?(?: *:?-+?:? *\\| *:?-+:? *)+(?:\\| *:?-+:? *)?\\|? *\\n?)';
@@ -487,7 +336,7 @@ require( 'Prototype' );
 					unparsed.html += '<thead><tr>';
 					for ( var i = 0, iend = captions.length; i < iend; ++i ) {
 						unparsed.html += '<th class="'+unparsed._options.thClass+'">';
-						new Unparsed( captions[i].trim(), unparsed, true ).parse();
+						new Unparsed( captions[i].trim(), unparsed, true );
 						unparsed.html += '</th>';
 					}
 					unparsed.html += '</tr></thead>';
@@ -523,7 +372,7 @@ require( 'Prototype' );
 						var cls = ' class="'+(aligns.length>j?aligns[j]:'')+'"';
 						cls = cls.length > 9 ? cls : '';
 						unparsed.html += '<td'+cls+'>';
-						new Unparsed( cols[j].trim(), unparsed, true ).parse();
+						new Unparsed( cols[j].trim(), unparsed, true );
 						unparsed.html += '</td>';
 					}
 					unparsed.html += '</tr>';
@@ -548,6 +397,75 @@ require( 'Prototype' );
 
 
 
+		
+
+
+
+
+
+		// headers ###
+
+		var RE_HEADER_NOALPHA = /[^0-9a-zA-Z_ \-]/g;
+		var RE_HEADER_SPACE = / /g;
+		var RE_WS = /[\s]+/g;
+
+		function _headerAnchor( text ) {
+			return text.replace( RE_HEADER_NOALPHA, '' ).replace( RE_HEADER_SPACE, '-' ).toLowerCase();
+		}
+
+
+		RE_STAGES.push( {
+			re: /^(#+) ((?:[^\n]+?(?:  \n)?)+?)#*$/gm,
+			cb: function( unparsed, m ) {
+				var header = {
+					level: Math.min( m[1].length, 6 ),
+					text: m[2].replace( RE_WS, ' ' )
+				};
+				header.anchor = _headerAnchor( header.text );
+				unparsed._ret.headers.push( header );
+				
+				var tag = 'h'+header.level;
+				unparsed.html += '<a name="'+header.anchor+'"></a><'+tag+'>';
+				var h = new Unparsed( m[2], unparsed, true );
+				unparsed.html += '</'+tag+'>'
+				
+				header.html = h.html;
+			}
+		} );
+
+		// headers --- ===
+		RE_STAGES.push( {
+			re: /^((?:[^\n](?:  \n[^\n=\-])?)+?)\n(?:(=){3,}|(-){3,})$/gm,
+			cb: function( unparsed, m ) {
+				var header = {
+					level: m[2] ? 1 : 2,
+					text: m[1].replace( RE_WS, ' ' )
+				};
+				header.anchor = _headerAnchor( header.text );
+				unparsed._ret.headers.push( header );
+
+				var tag = 'h'+header.level;
+				unparsed.html += '<a name="'+header.anchor+'"></a><'+tag+'>';
+				var h = new Unparsed( m[1], unparsed, true );
+				unparsed.html += '</'+tag+'>'
+
+				header.html = h.html;
+			}
+		} );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		// hr
 		RE_STAGES.push( {
@@ -556,6 +474,14 @@ require( 'Prototype' );
 				unparsed.html += '<hr/>';
 			}
 		} );
+
+
+
+
+
+
+
+
 
 
 
@@ -667,7 +593,7 @@ require( 'Prototype' );
 				var title = ' title="'+_escapeHtmlAttr(title||'')+'"';
 				title = title.length > 9 ? title : '';
 				unparsed.html += '<a href="'+_escapeHtmlAttr(url)+'"'+title+'>';
-				new Unparsed( text, unparsed, true ).parse();
+				new Unparsed( text, unparsed, true );
 				unparsed.html += '</a>';
 			},
 			inline: true
@@ -689,7 +615,7 @@ require( 'Prototype' );
 						return;
 					}
 				}
-				var ref = unparsed._markdown._ret.references[ id.toLowerCase() ];
+				var ref = unparsed._ret.references[ id.toLowerCase() ];
 				if ( ref === undefined ) {
 					unparsed.html += m;
 					return;
@@ -706,26 +632,31 @@ require( 'Prototype' );
 			re: /\[(.*?)\]\[(.*?)\]/gm,
 			cb: function ( unparsed, mm ) {
 				var m = mm[0], text = mm[1], id = mm[2];
+				var altid = false;
 				if ( !id ) {
 					if ( text ) {
 						id = text;
+						altid = true;
 					}
 					else {
 						unparsed.html += m;
 						return;
 					}
 				}
-				if ( id.charAt( 0 ) == '^' ) {
-					unparsed.html += '<a href="#'+_escapeHtmlAttr(id.substr(1).toLowerCase())+'">';
-					new Unparsed( text, unparsed, true ).parse();
+				var ref = unparsed._ret.references[ id.toLowerCase() ];
+				var isanchor = id.charAt( 0 ) == '^';
+				if ( isanchor || ( altid && ref === undefined ) ) {
+					if ( isanchor ) {
+						id = _escapeHtmlAttr( id.substr( 1 ).toLowerCase() );
+					}
+					else {
+						id = _headerAnchor( id );
+					}
+					unparsed.html += '<a href="#'+id+'">';
+					new Unparsed( text, unparsed, true );
 					unparsed.html += '</a>';
 				}
 				else {
-					var ref = unparsed._markdown._ret.references[ id.toLowerCase() ];
-					if ( ref === undefined ) {
-						unparsed.html += m;
-						return;
-					}
 					if ( !text ) {
 						unparsed.html += m;
 						return;
@@ -733,7 +664,7 @@ require( 'Prototype' );
 					var title = ' title="'+_escapeHtmlAttr(ref.title||'')+'"';
 					title = title.length > 9 ? title : '';
 					unparsed.html += '<a href="'+_escapeHtmlAttr(ref.url)+'"'+title+'>';
-					new Unparsed( text, unparsed, true ).parse();
+					new Unparsed( text, unparsed, true );
 					unparsed.html += '</a>';
 				}
 			}
@@ -759,7 +690,7 @@ require( 'Prototype' );
 		function _emphasis ( unparsed, m ) {
 			var tag = _emphasisTags[ m[2] ];
 			unparsed.html += m[1] + '<'+tag+'>';
-			new Unparsed( m[3], unparsed, true ).parse();
+			new Unparsed( m[3], unparsed, true );
 			unparsed.html += '</'+tag+'>';
 		}
 
@@ -873,35 +804,39 @@ require( 'Prototype' );
 
 
 
-		RE_STAGES.push( {
-			cb: function ( unparsed, needp ) {
-				var text = unparsed._text;
+		function _paragraphs ( text, trim, needp ) {
+			if ( text.length == 0 ) {
+				return;
+			}
+			if ( (trim || needp ) && text.indexOf( '\n\n' ) >= 0 ) {
+				text = text.split( '\n\n' );
+				var ps = [];
+				for ( var i = 0, iend = text.length; i < iend; ++i ) {
+					text[i] = text[i].trim();
+					if ( text[i].length > 0 ) {
+						ps.push( text[i] );
+					}
+				}
+				text = ps.join( '</p><p>' );
+				needp = true;
+			}
+			if ( needp ) {
+				text = text.trim();
 				if ( text.length == 0 ) {
 					return;
 				}
-				if ( (unparsed._trim || needp ) && text.indexOf( '\n\n' ) >= 0 ) {
-					//console.log(text)
-					// text = text.split( '\n\n' ).join( '</p><p>' );
-					text = text.split( '\n\n' );
-					var ps = [];
-					for ( var i = 0, iend = text.length; i < iend; ++i ) {
-						text[i] = text[i].trim();
-						if ( text[i].length > 0 ) {
-							ps.push( text[i] );
-						}
-					}
-					text = ps.join( '</p><p>' );
-					needp = true;
-				}
-				if ( needp ) {
-					text = text.trim();
-					if ( text.length == 0 ) {
-						return;
-					}
-					unparsed.html += '<p>' + text  + '</p>';
-				}
-				else {
-					// unparsed.html += unparsed._inline ? text : text.trim();
+				return '<p>' + text  + '</p>';
+			}
+			else {
+				return text;
+			}
+		}
+
+
+		RE_STAGES.push( {
+			cb: function ( unparsed, needp ) {
+				var text = _paragraphs( unparsed._text, unparsed._trim, needp );
+				if ( text ) {
 					unparsed.html += text;
 				}
 			}
@@ -918,77 +853,71 @@ require( 'Prototype' );
 
 
 
-	function Unparsed ( text, parent, nextstage ) {
+	function Unparsed ( text, parent, nextstage, needParagraph ) {
 		this._text = text;
 		this.html = '';
 		if ( parent instanceof Unparsed ) {
-			this._markdown = parent._markdown;
-			this._ret = parent;
+			this._ret = parent._ret;
+			this._options = parent._options;
 			this._inline = parent._inline;
 			this._stage = nextstage ? parent._stage + 1 : ( parent._inline ? RE_STAGE_INLINE : 0 );
 			this._trim = !parent._inline;
 		}
 		else {
-			this._markdown = parent;
-			this._ret = parent._ret;
+			this._ret = parent;
+			this._options = nextstage;
 			this._inline = false;
 			this._stage = 0;
 			this._trim = true;
 		}
-		this._options = this._markdown._options;
-	}
 
-	Unparsed.define( {
-		parse: function ( needParagraph ) {
-			for ( ;this._stage < RE_STAGES.length; ++this._stage ) {
-				var stage = RE_STAGES[this._stage];
-				var re = stage.re;
-				var m, start, end;
-				if ( re instanceof RegExp ) {
-					if ( m = re.exec( this._text ) ) {
-						start = m.index;
-						end = m.index + m[0].length;
-						re.lastIndex = 0;
-					}
-				}
-				else if ( re instanceof Object ) {
-					if ( m = _matchRecursive( this._text, re.start, re.end, re.flags ) ) {
-						start = m.match.start;
-						end = m.match.end;
-					}
-				}
-				else {
-					stage.cb( this, needParagraph );
-					continue;
-				}
-				this._inline = this._stage >= RE_STAGE_INLINE;
-				var needp = !this._inline;
-				if ( m ) {
-					//before the match
-					new Unparsed( this._text.substr( 0, start ), this, true ).parse( needp );
 
-					//the match
-					stage.cb( this, m );
-					
-					//after the match
-					new Unparsed( this._text.substr( end ), this ).parse( needp );
 
-					if ( needParagraph && this._inline ) {
-						var t = new Unparsed( this.html, this );
-						RE_STAGES[ RE_STAGES.length - 1 ].cb( t, needParagraph );
-						this.html = t.html;
-					}
 
-					break;
+
+		for ( ;this._stage < RE_STAGES.length; ++this._stage ) {
+			var stage = RE_STAGES[this._stage];
+			var re = stage.re;
+			var m, start, end;
+			if ( re instanceof RegExp ) {
+				if ( m = re.exec( this._text ) ) {
+					start = m.index;
+					end = m.index + m[0].length;
+					re.lastIndex = 0;
 				}
 			}
+			else if ( re instanceof Object ) {
+				if ( m = _matchRecursive( this._text, re.start, re.end, re.flags ) ) {
+					start = m.match.start;
+					end = m.match.end;
+				}
+			}
+			else {
+				stage.cb( this, needParagraph );
+				continue;
+			}
+			this._inline = this._stage >= RE_STAGE_INLINE;
+			var needp = !this._inline;
+			if ( m ) {
+				//before the match
+				new Unparsed( this._text.substr( 0, start ), this, true, needp );
 
-			this._ret.html += this.html;
-			return this;
+				//the match
+				stage.cb( this, m );
+				
+				//after the match
+				new Unparsed( this._text.substr( end ), this, false, needp );
+
+				if ( needParagraph && this._inline ) {
+					this.html = _paragraphs( this.html, false, true );
+				}
+
+				break;
+			}
 		}
 
-
-	} );
+		parent.html += this.html;
+	}
 
 
 
@@ -1005,35 +934,45 @@ require( 'Prototype' );
 
 
 	var RE_EOL = /\r\n|\r/g;
-	Markdown.define( {
+	
 
-		/**
-		@def Markdown.Parsed function Markdown.parse ( text:string )
-		*/
 
-		/**
-		@def object Markdown.Parsed {
-			html:string,
-			references:Object,
-			headers:Array
+	function Markdown ( text, options ) {
+		var opts = {
+			tableClass: 'table stripped',
+			thClass: 'text-left',
+			tdLeftClass: 'text-left',
+			tdRightClass: 'text-right',
+			tdCenterClass: 'text-center',
+			codeLangClassPrefix: 'lang-',
+			codeDefaultLang: null,
+			codeBlockClass: 'block',
+			codeInlineClass: 'inline',
+			codeInlineTag: "code",
+			needParagraph: false
+		};
+
+		if ( options instanceof Object ) {
+			for ( var key in options ) {
+				opts[key] = options[key];
+			}
 		}
-		*/
-		parse: function ( text ) {
-			this._ret = {
-				html: '',
-				references: {},
-				headers: []
-			};
 
-			new Unparsed( text.replace( RE_EOL, '\n' ), this ).parse( this._options.needParagraph );
+		var ret = {
+			html: '',
+			references: {},
+			headers: []
+		};
 
-			return this._ret;
-		},
+		new Unparsed( text.replace( RE_EOL, '\n' ), ret, opts, opts.needParagraph );
 
-		escapeHtml: _escapeHtml
-	} );
+		return ret;
+	}
 
-	global.Markdown = Markdown;
+
+	exports.Markdown = Markdown;
+
+
 
 })( this, typeof global != 'undefined' ? global : window );
 

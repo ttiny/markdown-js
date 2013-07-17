@@ -1,18 +1,12 @@
 <button id="btn">go</button>
 <div id="result"></div>
-<script type="text/javascript">function require() {}</script>
-<script type="text/javascript" src="node_modules/Prototype/node_modules/Unitest/Unitest.js"></script>
-<script type="text/javascript" src="node_modules/Prototype/Object.js"></script>
-<script type="text/javascript" src="node_modules/Prototype/Array.js"></script>
-<script type="text/javascript" src="node_modules/Prototype/String.js"></script>
-<script type="text/javascript" src="node_modules/Prototype/Function.js"></script>
 <script type="text/javascript" src="Markdown.js"></script>
 <script type="text/javascript">
-	var md = new Markdown();
 	btn.addEventListener( 'click', function() {
 		var html;
+    console.log(Markdown( testdata.innerHTML ))
 		for ( var i = 1000; i >= 0; --i ) {
-			html = md.parse( testdata.innerHTML ).html;
+			html = Markdown( testdata.innerHTML ).html;
 		}
 		result.innerHTML = html;
 	} );
