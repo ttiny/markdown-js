@@ -1,6 +1,6 @@
 Markdown
 --------
-Somehow GFM compatible markdown parser.
+Somehow GFM compatible markdown parser for Node.js and browsers.
 
 This project was developed as supporting project for [jsdocgen](https://github.com/Perennials/jsdocgen) but can be used on its own.
 
@@ -11,9 +11,9 @@ Supported syntax
 - [GFM Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 
 Additionally:
-- `~~~` is also a code block
-- `[Internal link][^anchor-name]`
-- `[^anchor-name]:`
+- `~~~` is also a code block.
+- `[Internal link][^anchor-name]`.
+- `[^anchor-name]:`.
 - This is `___underline___`.
 - This is `--strike through--` also.
 - Line breaks inside headers.
