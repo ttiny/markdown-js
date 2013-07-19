@@ -11,6 +11,8 @@ Supported syntax
 - [GFM Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 
 Additionally:
+- Reference links to headers `[Header text][]` is the same as
+  `[Header text](#header-text)` if no reference with this name is found.
 - `~~~` is also a code block.
 - `[Internal link][^anchor-name]`.
 - `[^anchor-name]:`.
@@ -27,7 +29,7 @@ Usage
 -----
 
 ```javascript
-var parsed = Markdown( 'makdown text', options );
+var parsed = Markdown( 'markdown text', options );
 ```
 
 options (with their default values):
