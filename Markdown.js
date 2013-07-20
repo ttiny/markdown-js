@@ -571,7 +571,7 @@
 			re: /!\[(.*?)\]\((.*?)(?: "([^"\\]*(?:\\.[^"\\]*)*)")?\)/gm,
 			cb: function ( unparsed, mm ) {
 				var m = mm[0], text = mm[1], url = mm[2], title = mm[3];
-				var title = ' title="'+_escapeHtmlAttr(text||title)+'"';
+				var title = ' title="'+_escapeHtmlAttr(text||title||'')+'"';
 				title = title.length > 9 ? title : '';
 				unparsed.html += '<img src="'+_escapeHtmlAttr(url)+'"'+title+' />';
 			},
