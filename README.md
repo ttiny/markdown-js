@@ -60,10 +60,10 @@ options (with their default values):
   // If to wrap code blocks with pre tag.
 
   codeBlockClass: 'block',
-  // Adds a class name to the code blocks to be able to identify the from inline code.
+  // Adds a class name to the code blocks to be able to identify them from inline code.
 
   codeInlineClass: 'inline',
-  // Adds a class name to the inline code elements to be able to identify the from code block.
+  // Adds a class name to the inline code elements to be able to identify them from code blocks.
 
   codeInlineTag: 'code',
   // Chooses a different tag for 'inline code'.
