@@ -28,7 +28,12 @@ Additionally:
 Usage
 -----
 
+```
+npm install https://github.com/Perennials/markdown-js/tarball/master
+```
+
 ```javascript
+var Markdown = require( 'Markdown' ).Markdown;
 var parsed = Markdown( 'markdown text', options );
 ```
 
