@@ -11,11 +11,11 @@ Supported syntax
 - [GFM Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 
 Additionally:
-- Reference links to headers `[Header text][]` is the same as
+- Reference links to headers: `[Header text][]` is the same as
   `[Header text](#header-text)` if no reference with this name is found.
 - `~~~` is also a code block.
-- `[Internal link][^anchor-name]`.
-- `[^anchor-name]:`.
+- `[Internal link][^anchor-name]` is a link to anchor in the document.
+- `[^anchor-name]:` places an anchor in the document.
 - This is `___underline___`.
 - This is `--strike through--` also.
 - Line breaks inside headers.
