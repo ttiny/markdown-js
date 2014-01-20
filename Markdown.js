@@ -214,11 +214,13 @@
 		function _parseListItems ( text, spaces, type, unparsed ) {
 			type = type.length == 1 ? '[\\+\\-\\*]' : '\\d+\\.';
 			var _reListItem = new RegExp( '^(?: *'+type+' ((?:[^\\n]|\\n(?!'+spaces+type+' ))*))', 'gm' );
+			var _reTrim = new RegExp( '^ {'+(spaces.length)+','+(spaces.length+type.length+1)+'}', 'gm' );
 			var m;
 			while ( m = _reListItem.exec( text ) ) {
+				m[1] = m[1].replace( _reTrim, '' );
 				unparsed.html += '<li>';
 				//start over stages here cause we can have code inside lists which is not matched so far
-				//bacase the extra spaces
+				//bacause the extra spaces
 				new Unparsed( m[1], unparsed );
 				unparsed.html += '</li>';
 			}
