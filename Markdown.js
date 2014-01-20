@@ -511,11 +511,15 @@
 			return _escapeMarkdownAttr( _escapeHtml( text ) );
 		}
 
+		function _escapeHtmlBasicAttr ( text ) {
+			return _escapeMarkdownAttr( _escapeHtmlBasic( text ) );
+		}
+
 
 		function _inlineCode ( unparsed, m ) {
 			var tag = unparsed._options.codeInlineTag;
 			var cls = unparsed._options.codeInlineClass ? ' class="'+unparsed._options.codeInlineClass+'"' : '';
-			var code = _escapeHtmlAttr( m[2] );
+			var code = _escapeHtmlBasicAttr( m[2] );
 			code = unparsed._options.codeCallback ? unparsed._options.codeCallback( code ) : code;
 			unparsed.html += m[1] + '<'+tag+cls+'>' + code + '</'+tag+'>';
 		}
