@@ -662,16 +662,17 @@
 					new Unparsed( text, unparsed, true );
 					unparsed.html += '</a>';
 				}
-				else {
-					if ( !text ) {
-						unparsed.html += m;
-						return;
-					}
+				else if ( ref && text ) {
+					
 					var title = ' title="'+_escapeHtmlAttr(ref.title||'')+'"';
 					title = title.length > 9 ? title : '';
 					unparsed.html += '<a href="'+_escapeHtmlAttr(ref.url)+'"'+title+'>';
 					new Unparsed( text, unparsed, true );
 					unparsed.html += '</a>';
+				}
+				else {
+					unparsed.html += m;
+					return;
 				}
 			}
 		} );
